@@ -1,4 +1,6 @@
-## SI 364 - Winter 2018
+## Francisco "Paco" Gallardo
+## University of Michigan School of Information 
+## SI 364: Building Interactive Applications - Winter 2018
 ## HW 3
 
 ####################
@@ -19,7 +21,7 @@ app.config['SECRET_KEY'] = 'hard to guess string from si364'
 ## TODO 364: Create a database in postgresql in the code line below, and fill in your app's database URI. It should be of the format: postgresql://localhost/YOUR_DATABASE_NAME
 
 ## Your final Postgres database should be your uniqname, plus HW3, e.g. "jczettaHW3" or "maupandeHW3"
-app.config["SQLALCHEMY_DATABASE_URI"] = ""
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://frga@localhost:5432/frgaHW3"
 ## Provided:
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -54,6 +56,16 @@ db = SQLAlchemy(app) # For database use
 ## Should have a __repr__ method that returns strings of a format like:
 #### {Tweet text...} (ID: {tweet id})
 
+# Setting Up Tweet Class
+class Tweet(db.Model):
+	__tablename__ = 'Tweet'
+	id = db.Column(db.Integer, primary_key = True)
+	text = db.Column(db.String(280))
+	user_id = db.Column(db.Integer, db.ForeignKey('User.id'))
+
+	def __repr__(self):
+		return 'Tweet text: {} (ID: {}'.format(self.text, self.id)
+
 
 # - User
 ## -- id (Integer, Primary Key)
@@ -63,6 +75,20 @@ db = SQLAlchemy(app) # For database use
 
 ## Should have a __repr__ method that returns strings of a format like:
 #### {username} | ID: {id}
+
+# Setting up User Class
+class User(db.Model):
+	__tablename__ = 'User'
+	id = db.Column(db.Integer, primary_key= True)
+	username = db.Column(db.String(64), unique = True)
+	display_name = db.Column(db.String(124))
+	tweets = db.relationship('Tweet', backref = 'Tweet')
+
+
+
+	def __repr__(self):
+		return '{} | ID: {}'.format(self.username, self.id)
+
 
 
 ########################
@@ -82,6 +108,23 @@ db = SQLAlchemy(app) # For database use
 # - the display name MUST be at least 2 words (this is a useful technique to practice, even though this is not true of everyone's actual full name!)
 
 # TODO 364: Make sure to check out the sample application linked in the readme to check if yours is like it!
+
+# Creating validator for display_name
+def full_name_validator(form, field):
+	if len(field.data.split()) < 2:
+		raise ValidationError('Display Name Field must be 2 words: First and Last name')
+	elif '@' == str(field.data)[0]:
+		raise ValidationError('Display Name Field must not contain the "@" symbol')
+
+# Setting up Tweet Form
+class TweetForm(FlaskForm):
+	text = StringField('Enter Tweet text (280 characters MAX)', validators = [Required(), Length(min = 1, max = 280)])
+
+	username = StringField('Enter the username of tweeter', validators = [Required(), Length(min = 1, max = 64)])
+
+	display_name = StringField("Tweeter's display name", validators = [ Required(), full_name_validator])
+
+	submit = SubmitField()
 
 
 ###################################
@@ -118,30 +161,50 @@ def internal_server_error(e):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     # Initialize the form
-
+    form = TweetForm(request.form)
+    empty_form = TweetForm()
     # Get the number of Tweets
 
     # If the form was posted to this route,
     ## Get the data from the form
+    if form.validate_on_submit() and request.method== 'POST':
+    	text_data = form.text.data
+    	username_data = form.username.data
+    	display_data = form.display_name.data
 
     ## Find out if there's already a user with the entered username
     ## If there is, save it in a variable: user
     ## Or if there is not, then create one and add it to the database
+    	user = User.query.filter_by(username = username_data).first()
+    	if user == None:
+    		user = User(username = username_data, display_name = display_data)
+    		db.session.add(user)
+    		db.session.commit()
+
 
     ## If there already exists a tweet in the database with this text and this user id (the id of that user variable above...) ## Then flash a message about the tweet already existing
     ## And redirect to the list of all tweets
+
+    	# elif list(Tweet.query.filter_by(user = user).all()) > 0:
+
+    	# 	flash('This user already posted this tweet!')
+    	# 	return redirect(url_for('/all_tweets'))
 
     ## Assuming we got past that redirect,
     ## Create a new tweet object with the text and user id
     ## And add it to the database
     ## Flash a message about a tweet being successfully added
     ## Redirect to the index page
+    	new_tweet = Tweet(text = text_data, Tweet = user)
+    	db.session.add(new_tweet)
+    	db.session.commit()
 
+    	flash('Tweet successfully added')
     # PROVIDED: If the form did NOT validate / was not submitted
     errors = [v for v in form.errors.values()]
     if len(errors) > 0:
         flash("!!!! ERRORS IN FORM SUBMISSION - " + str(errors))
-    return render_template('index.html',) # TODO 364: Add more arguments to the render_template invocation to send data to index.html
+    return render_template('index.html',form = empty_form) # TODO 364: Add more arguments to the render_template invocation to send data to index.html
 
 @app.route('/all_tweets')
 def see_all_tweets():
@@ -174,5 +237,6 @@ def see_all_users():
 
 
 if __name__ == '__main__':
-    db.create_all() # Will create any defined models when you run the application
-    app.run(use_reloader=True,debug=True) # The usual
+	db.create_all() # Will create any defined models when you run the application
+	app.run(use_reloader=True,debug=True) # The usual
+
