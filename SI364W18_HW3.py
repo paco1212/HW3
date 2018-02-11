@@ -126,7 +126,7 @@ class TweetForm(FlaskForm):
 
 	username = StringField('Enter your Twitter handle @', validators = [Required(), Length(min = 1, max = 64)])
 
-	display_name = StringField("Tweeter's display name", validators = [ Required(), full_name_validator])
+	display_name = StringField("Tweeter's display name (must be 2 words or more)", validators = [ Required(), full_name_validator])
 
 	submit = SubmitField()
 
