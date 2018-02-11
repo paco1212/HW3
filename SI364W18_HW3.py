@@ -165,7 +165,7 @@ def internal_server_error(e):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     # Initialize the form
-    form = TweetForm(request.form)
+    form = TweetForm()
     empty_form = TweetForm()
     # Get the number of Tweets
     all_tweets = Tweet.query.all()
@@ -245,12 +245,16 @@ def see_all_users():
 # Create a template to accompany it called longest_tweet.html that extends from base.html.
 @app.route('/longest_tweet')
 def get_longest_tweet():
+
     all_tweets = Tweet.query.all()
-    longest = all_tweets[0].text
-    for tweet in all_tweets:
-        if len(tweet.text) > len(longest):
-            longest = tweet.text
-    return render_template('longest_tweet.html', longest_tweet = longest)
+
+    sorted_tweets = sorted([tw.text for tw in all_tweets], key = lambda x: len(x.split()), reverse = True)
+    longest_tweet = sorted_tweets[0]
+    user_id = Tweet.query.filter_by(text = longest_tweet).first().user_id
+    user_name = User.query.filter_by(id = user_id).first().username
+    name = User.query.filter_by(id = user_id).first().display_name
+
+    return render_template('longest_tweet.html', longest_tweet = longest_tweet, user = user_name, display_name = name)
 
 # NOTE:
 # This view function should compute and render a template (as shown in the sample application) that shows the text of the tweet currently saved in the database which has the most NON-WHITESPACE characters in it, and the username AND display name of the user that it belongs to.
