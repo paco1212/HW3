@@ -25,7 +25,7 @@ app.config['SECRET_KEY'] = 'hard to guess string from si364'
 ## TODO 364: Create a database in postgresql in the code line below, and fill in your app's database URI. It should be of the format: postgresql://localhost/YOUR_DATABASE_NAME
 
 ## Your final Postgres database should be your uniqname, plus HW3, e.g. "jczettaHW3" or "maupandeHW3"
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://frga@localhost:5432/frgaHW3"
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://localhost/frgaHW3"
 ## Provided:
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -68,7 +68,7 @@ class Tweet(db.Model):
 	user_id = db.Column(db.Integer, db.ForeignKey('User.id'))
 
 	def __repr__(self):
-		return '<%r>' % self.text
+		return 'Tweet text: %s | ID: %d' % (self.text, self.id)
         # 'Tweet text: {} (ID: {})'.format(self.text, self.id)
 
 
@@ -92,7 +92,7 @@ class User(db.Model):
 
 
 	def __repr__(self):
-		return '<%r>' % self.username
+		return '%s | ID: %d' % (self.username, self.id)
 
 
 ########################
@@ -173,7 +173,7 @@ def index():
 
     # If the form was posted to this route,
     ## Get the data from the form
-    if form.validate_on_submit() and request.method== 'POST':
+    if form.validate_on_submit():
     	text_data = form.text.data
     	username_data = form.username.data
     	display_data = form.display_name.data
