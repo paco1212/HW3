@@ -13,6 +13,7 @@ from wtforms import StringField, SubmitField, ValidationError
 from wtforms.validators import Required, Length
 from flask_sqlalchemy import SQLAlchemy
 from flask_script import Manager, Shell # New
+from collections import defaultdict
 
 ############################
 # Application configurations
@@ -215,15 +216,14 @@ def index():
 @app.route('/all_tweets')
 def see_all_tweets():
 	all_tweets = Tweet.query.all()
-	all_users = User.query.all()
-	new = []
+
+	tweets_and_handles = []
 	for tweet in all_tweets:
-		user_id = tweet.user_id
-		for user in all_users:
-			user_name = user.username
-			if user.id == user_id:
-				new.append((tweet.text,user_name))
-	return render_template('all_tweets.html', all_tweets = new)
+		tweet_text = tweet.text
+		user_name = User.query.filter_by(id = tweet.user_id).first().username
+		tweets_and_handles.append((tweet_text,user_name))
+
+	return render_template('all_tweets.html', all_tweets = tweets_and_handles)
 
 	# pass # Replace with code
 	# TODO 364: Fill in this view function so that it can successfully render the template all_tweets.html, which is provided.
@@ -235,8 +235,6 @@ def see_all_tweets():
 def see_all_users():
 	all_users = User.query.all()
 	return render_template('all_users.html', users = all_users)
-
-	# pass # Replace with code
 	# TODO 364: Fill in this view function so it can successfully render the template all_users.html, which is provided.
 
 # TODO 364
@@ -267,6 +265,7 @@ def get_longest_tweet():
 ## - Dictionary accumulation, the max value pattern
 ## - Sorting
 # may be useful for this problem!
+
 
 
 if __name__ == '__main__':
